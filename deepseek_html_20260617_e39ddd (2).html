@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cálculo Remoção SGP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+/* ── Design System ── */
+:root {
+    --g: #BF8C14; --g-d: #9E720F; --g-l: #DDB84A; --g-pl: #F5E9C4; --g-pale: #FDF8EE;
+    --n: #0A1C30; --n2: #12273F; --n3: #1A324E;
+    --bg: #EBEBDF; --sf: #FFFFFF; --sf2: #F5F4EE; --sf3: #EEEEE5;
+    --bd: #E0DDCF; --bd2: #D3CFBE; --bd3: #C5C0AC;
+    --t: #0A1C30; --t2: #374E68; --t3: #7086A0; --t4: #A8BAD0;
+    --ok: #166534; --ok-bg: #DCFCE7; --ok-bd: #BBF7D0;
+    --er: #991B1B; --er-bg: #FEE8E8; --er-bd: #FECACA;
+    --am: #92400E; --am-bg: #FEF3C7; --am-bd: #FDE68A;
+    --sh-sm: 0 1px 4px rgba(10,28,48,.07),0 0 1px rgba(10,28,48,.04);
+    --sh: 0 4px 18px rgba(10,28,48,.09),0 1px 4px rgba(10,28,48,.05);
+    --r: 10px; --r6: 6px; --r14: 14px;
+    --ff: 'Outfit', system-ui, sans-serif;
+    --fs: 'DM Serif Display', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: var(--ff);
+    background: var(--bg);
+    color: var(--t);
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ── Componentes ── */
+.app { display: flex; flex-direction: column; gap: 16px; }
+
+.ptitle {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--t);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+.psubt {
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 24px;
+    font-weight: 400;
+}
+
+.norm {
+    background: var(--g-pale);
+    border-radius: var(--r);
+    border: 1px solid var(--g-pl);
+    border-left: 4px solid var(--g);
+    padding: 14px 20px;
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+}
+.norm-t {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: var(--g-d);
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.norm-b {
+    font-size: 12px;
+    color: var(--t2);
+    line-height: 1.8;
+}
+.norm-b strong { color: var(--t); font-weight: 700; }
+
+.card {
+    background: var(--sf);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--sh-sm);
+    border: 1px solid var(--bd);
+}
+.cht {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--t);
+    margin-bottom: 18px;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.cht::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    background: var(--g);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.mt10 { margin-top: 10px; }
+.mt12 { margin-top: 12px; }
+.mt14 { margin-top: 14px; }
+
+.fl { display: flex; flex-direction: column; gap: 5px; }
+.fl label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+}
+.fl input[type="text"],
+.fl input[type="date"],
+.fl input[type="number"],
+.fl select,
+.fl textarea {
+    padding: 9px 13px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r6);
+    font-size: 13px;
+    font-family: var(--ff);
+    font-weight: 500;
+    color: var(--t);
+    background: var(--sf);
+    width: 100%;
+    transition: border-color .14s, box-shadow .14s;
+}
+.fl input:focus,
+.fl select:focus,
+.fl textarea:focus {
+    outline: none;
+    border-color: var(--g);
+    box-shadow: 0 0 0 3px rgba(191,140,20,.1);
+}
+.fl textarea { resize: vertical; line-height: 1.5; }
+.hint {
+    font-size: 11px;
+    color: var(--t4);
+    margin-top: 3px;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+.btn {
+    padding: 10px 22px;
+    border-radius: var(--r6);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .15s ease;
+    font-family: var(--ff);
+    letter-spacing: .01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.b-g {
+    background: linear-gradient(135deg, #1F7A32, var(--ok));
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(22,101,52,.22);
+}
+.b-g:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.b-s {
+    background: var(--sf);
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+}
+.b-s:hover { border-color: var(--g); color: var(--g); }
+.b-sm { padding: 6px 13px; font-size: 12px; }
+.brow {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ok-box {
+    background: var(--ok-bg);
+    border: 1px solid var(--ok-bd);
+    border-radius: var(--r6);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+.ok-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ok);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.err-box {
+    background: var(--am-bg);
+    border: 1px solid var(--am-bd);
+    border-radius: var(--r6);
+    padding: 10px 15px;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--am);
+    font-weight: 500;
+}
+
+/* ── Estilos específicos ── */
+.remocao-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: var(--r);
+    margin-top: 12px;
+    border: 1.5px solid var(--bd);
+    background: var(--sf);
+}
+.remocao-status .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.remocao-status .dot.verde { background: #22C55E; }
+.remocao-status .dot.amarelo { background: #EAB308; }
+.remocao-status .dot.vermelho { background: #EF4444; }
+.remocao-status .dot.azul { background: #3B82F6; }
+.remocao-status .dot.roxo { background: #8B5CF6; }
+
+.remocao-timeline {
+    margin: 16px 0;
+    padding: 16px 20px;
+    background: var(--sf2);
+    border-radius: var(--r);
+    border: 1px solid var(--bd);
+    position: relative;
+}
+.remocao-timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 32px;
+    bottom: 32px;
+    width: 2px;
+    background: var(--bd2);
+}
+.remocao-timeline .evento {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 8px 0;
+    position: relative;
+}
+.remocao-timeline .evento .marcador {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.remocao-timeline .evento .marcador.verde { background: #22C55E; }
+.remocao-timeline .evento .marcador.amarelo { background: #EAB308; }
+.remocao-timeline .evento .marcador.vermelho { background: #EF4444; }
+.remocao-timeline .evento .marcador.azul { background: #3B82F6; }
+.remocao-timeline .evento .marcador.roxo { background: #8B5CF6; }
+.remocao-timeline .evento .conteudo { flex: 1; padding-top: 2px; }
+.remocao-timeline .evento .conteudo .data {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--t);
+}
+.remocao-timeline .evento .conteudo .desc {
+    font-size: 12px;
+    color: var(--t2);
+    margin-top: 2px;
+}
+.remocao-timeline .evento .conteudo .dias {
+    font-size: 11px;
+    color: var(--t3);
+    margin-top: 1px;
+}
+
+.remocao-resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+}
+.remocao-resumo-grid .item {
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: var(--r6);
+    padding: 14px 16px;
+    text-align: center;
+}
+.remocao-resumo-grid .item .label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+.remocao-resumo-grid .item .valor {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--t);
+    margin-top: 4px;
+    font-family: var(--ff);
+}
+.remocao-resumo-grid .item .valor.verde { color: #22C55E; }
+.remocao-resumo-grid .item .valor.vermelho { color: #EF4444; }
+.remocao-resumo-grid .item .valor.amarelo { color: #EAB308; }
+.remocao-resumo-grid .item .valor.azul { color: #3B82F6; }
+.remocao-resumo-grid .item .valor.roxo { color: #8B5CF6; }
+
+.remocao-afastamento-info {
+    background: var(--am-bg);
+    border: 1px solid var(--am-bd);
+    border-radius: var(--r6);
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-size: 12.5px;
+    color: var(--am);
+}
+.remocao-afastamento-info strong { color: var(--t); }
+
+.remocao-liberacao-info {
+    background: var(--g-pale);
+    border: 1px solid var(--g-pl);
+    border-radius: var(--r6);
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-size: 12.5px;
+    color: var(--t2);
+}
+.remocao-liberacao-info strong { color: var(--g-d); }
+
+.memo {
+    background: var(--sf);
+    border-radius: var(--r14);
+    border: 1px solid var(--bd);
+    border-top: 3px solid var(--g);
+    padding: 0;
+    margin-bottom: 18px;
+    overflow: hidden;
+    box-shadow: var(--sh-sm);
+}
+.memo-t {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--t);
+    padding: 13px 20px 12px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--sf);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.memo-t::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    background: var(--g);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.ms {
+    background: var(--sf);
+    border-bottom: 1px solid var(--bd);
+    padding: 14px 20px;
+}
+.ms:last-child { border-bottom: none; }
+.ms-l {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--g-d);
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.ms-l::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--g);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.ms-t {
+    font-size: 13px;
+    color: var(--t2);
+    margin-bottom: 4px;
+    line-height: 1.65;
+}
+.ms-f {
+    font-size: 13px;
+    color: var(--t);
+    line-height: 1.75;
+    padding: 6px 12px;
+    background: var(--sf2);
+    border-radius: var(--r4);
+    margin: 3px 0;
+    border-left: 2.5px solid var(--g-pl);
+}
+.ms-n {
+    font-size: 10.5px;
+    color: var(--t3);
+    margin-top: 5px;
+    line-height: 1.6;
+    font-style: italic;
+}
+.ms-ok { font-size: 15px; font-weight: 700; color: var(--ok); margin-top: 6px; }
+.ms-err { font-size: 15px; font-weight: 700; color: var(--er); margin-top: 6px; }
+
+.v-big {
+    font-family: var(--ff);
+    font-size: 22px;
+    font-weight: 700;
+    padding: 20px 28px;
+    border-radius: var(--r);
+    text-align: center;
+    margin-top: 16px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+.v-cred { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-bd); }
+.v-deb { background: var(--er-bg); color: var(--er); border: 1px solid var(--er-bd); }
+.v-am { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+
+.tw { overflow-x: auto; }
+table.dt {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+table.dt th {
+    padding: 9px 12px;
+    font-size: 9.5px;
+    color: var(--t3);
+    font-weight: 700;
+    border-bottom: 2px solid var(--bd);
+    text-align: left;
+    background: var(--sf2);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    white-space: nowrap;
+}
+table.dt td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--bd);
+    color: var(--t);
+    vertical-align: middle;
+    font-weight: 500;
+}
+table.dt tr:last-child td { border-bottom: none; }
+table.dt tbody tr:hover td { background: var(--g-pale); }
+
+/* ── Print ── */
+@media print {
+    .no-print { display: none !important; }
+    body { background: #fff; padding: 10px; }
+    .app { gap: 8px; }
+    .card, .norm, .memo { box-shadow: none; border-color: #ccc; }
+    .btn { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+    <!-- Cabeçalho -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 16px;border-bottom:2px solid var(--g)">
+        <div>
+            <div style="font-size:20px;font-weight:800;color:var(--n)">Cálculo Remoção <span style="font-weight:400;color:var(--t3)">·</span> <span style="font-weight:400;color:var(--t2)">SGP</span></div>
+            <div style="font-size:11px;color:var(--t3)">Prazos de liberação e apresentação — Art. 36, Lei 8.112/90</div>
+        </div>
+        <div style="font-size:11px;color:var(--t4)">v3.0</div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div id="con"></div>
+
+    <!-- Rodapé -->
+    <div style="margin-top:30px;padding-top:12px;border-top:1px solid var(--bd);font-size:10px;color:var(--t4);text-align:center">
+        Cálculo Remoção SGP — Sistema de Acertos Financeiros
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════════════════════════
+
+function e(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function fd(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; }
+function pd(iso) { if (!iso) return null; var p = iso.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+function R(v) { if (isNaN(v) || v == null) return "R$ —"; var a = Math.abs(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, "."); return (v < 0 ? "- " : "") + "R$ " + a; }
+function svg(p, sz, c) { return '<svg width="' + (sz || 16) + '" height="' + (sz || 16) + '" viewBox="0 0 24 24" fill="none" stroke="' + (c || "currentColor") + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
+
+function showOk(msg) { UI.ok = true; UI.okMsg = msg; UI.err = false; render(); setTimeout(function() { UI.ok = false; render(); }, 3200); }
+function showErr(msg) { UI.err = true; UI.errMsg = msg; UI.ok = false; render(); }
+
+function applyTitleCase(el, stateRef) {
+    var v = toTitleCase(el.value);
+    el.value = v;
+    if (stateRef) stateRef.nome = v;
+}
+function toTitleCase(str) {
+    if (!str) return str;
+    var particulas = ['da', 'de', 'do', 'das', 'dos', 'e', 'no', 'na', 'nos', 'nas', 'ao', 'aos', 'à', 'às', 'um', 'uma', 'uns', 'umas'];
+    return str.trim().replace(/\s+/g, ' ').split(' ').map(function(w, i) {
+        if (i > 0 && particulas.indexOf(w.toLowerCase()) !== -1) return w.toLowerCase();
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════════════════
+
+var UI = {
+    rem: {
+        nome: "",
+        siape: "",
+        dataPublicacao: "",
+        temAfastamento: false,
+        dataInicioAfastamento: "",
+        dataFimAfastamento: "",
+        dataLiberacaoEfetiva: "",
+        obs: "",
+        res: null
+    },
+    ok: false,
+    okMsg: "",
+    err: false,
+    errMsg: ""
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════════════════════════════
+
+const REM_PRAZO_LIBERACAO = 10;
+const REM_PRAZO_APRESENTACAO = 20;
+const REM_COR_VERDE = 'verde';
+const REM_COR_AMARELO = 'amarelo';
+const REM_COR_VERMELHO = 'vermelho';
+const REM_COR_AZUL = 'azul';
+const REM_COR_ROXO = 'roxo';
+const REM_STATUS_ICONS = {
+    'verde': '✅',
+    'amarelo': '⏳',
+    'vermelho': '🔴',
+    'azul': 'ℹ️',
+    'roxo': '🟣'
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CÁLCULO
+// ═══════════════════════════════════════════════════════════════════
+
+function remNormalizeDate(d) {
+    var result = new Date(d);
+    result.setHours(0, 0, 0, 0);
+    return result;
+}
+
+function remDiasUteisEntre(d1, d2) {
+    if (!d1 || !d2 || d1 > d2) return 0;
+    var count = 0;
+    var current = new Date(d1);
+    current.setHours(0, 0, 0, 0);
+    var end = new Date(d2);
+    end.setHours(0, 0, 0, 0);
+    while (current <= end) {
+        var dow = current.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+        current.setDate(current.getDate() + 1);
+    }
+    return count;
+}
+
+function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLiberacaoEfetiva) {
+    if (!dataPublicacao) return null;
+
+    var pub = pd(dataPublicacao);
+    if (!pub) return null;
+
+    var pubNorm = remNormalizeDate(pub);
+    var iniContagem = new Date(pubNorm);
+
+    // ── PASSO 1: Data de Liberação ──
+    // Prazo de 10 dias contados da publicação (dia da publicação = Dia 1)
+    // Dia 10 = data da publicação + 9 dias
+    var dataLiberacaoBase = new Date(iniContagem);
+    dataLiberacaoBase.setDate(dataLiberacaoBase.getDate() + (REM_PRAZO_LIBERACAO - 1));
+
+    // ── PASSO 2: Data de Apresentação ──
+    // Prazo de 20 dias contados da data da LIBERAÇÃO
+    // Se não houver liberação efetiva informada, usa a data de liberação calculada
+    // Dia 20 = data da liberação + 19 dias
+    var dataLiberacaoReferencia = dataLiberacaoBase;
+    var dataApresentacaoBase = new Date(dataLiberacaoReferencia);
+    dataApresentacaoBase.setDate(dataApresentacaoBase.getDate() + (REM_PRAZO_APRESENTACAO - 1));
+
+    // ── PASSO 3: Verifica se foi informada uma data de efetiva liberação ──
+    var temLiberacaoEfetiva = false;
+    var dataLiberacaoEfetivaNorm = null;
+    var diasAntecipacao = 0;
+    var dataApresentacaoRecalculada = null;
+
+    if (dataLiberacaoEfetiva) {
+        var libEf = pd(dataLiberacaoEfetiva);
+        if (libEf) {
+            dataLiberacaoEfetivaNorm = remNormalizeDate(libEf);
+            // Verifica se a data está dentro do prazo de 10 dias
+            if (dataLiberacaoEfetivaNorm >= iniContagem && dataLiberacaoEfetivaNorm <= dataLiberacaoBase) {
+                temLiberacaoEfetiva = true;
+                // Calcula quantos dias de antecipação (ou atraso)
+                diasAntecipacao = Math.ceil((dataLiberacaoBase - dataLiberacaoEfetivaNorm) / (1000 * 60 * 60 * 24));
+                // Recalcula a data de apresentação: a partir da data de efetiva liberação + 20 dias
+                // O dia da liberação conta como Dia 1
+                dataApresentacaoRecalculada = new Date(dataLiberacaoEfetivaNorm);
+                dataApresentacaoRecalculada.setDate(dataApresentacaoRecalculada.getDate() + (REM_PRAZO_APRESENTACAO - 1));
+            }
+        }
+    }
+
+    // ── PASSO 4: Análise do afastamento ──
+    // O afastamento posterga APENAS a data de liberação
+    // A data de apresentação é sempre contada a partir da data de liberação (efetiva ou calculada)
+    var afastamentoAtivo = false;
+    var diasPostergacao = 0;
+    var detalheAfastamento = null;
+    var dataLiberacaoFinal = new Date(dataLiberacaoBase);
+    var dataApresentacaoFinal = new Date(dataApresentacaoBase);
+
+    if (temAfastamento && iniAfast && fimAfast) {
+        var iniAf = pd(iniAfast);
+        var fimAf = pd(fimAfast);
+
+        if (iniAf && fimAf && fimAf >= iniAf) {
+            var iniAfNorm = remNormalizeDate(iniAf);
+            var fimAfNorm = remNormalizeDate(fimAf);
+
+            // Janela do prazo de liberação: da publicação até a data de liberação
+            var inicioJanela = new Date(iniContagem);
+            var fimJanela = new Date(dataLiberacaoBase);
+
+            var inicioSobreposicao = new Date(Math.max(inicioJanela.getTime(), iniAfNorm.getTime()));
+            var fimSobreposicao = new Date(Math.min(fimJanela.getTime(), fimAfNorm.getTime()));
+
+            if (fimSobreposicao >= inicioSobreposicao) {
+                afastamentoAtivo = true;
+                diasPostergacao = Math.ceil((fimSobreposicao - inicioSobreposicao) / (1000 * 60 * 60 * 24)) + 1;
+
+                dataLiberacaoFinal = new Date(dataLiberacaoBase);
+                dataLiberacaoFinal.setDate(dataLiberacaoFinal.getDate() + diasPostergacao);
+
+                // A data de apresentação é recalculada a partir da nova data de liberação
+                dataApresentacaoFinal = new Date(dataLiberacaoFinal);
+                dataApresentacaoFinal.setDate(dataApresentacaoFinal.getDate() + (REM_PRAZO_APRESENTACAO - 1));
+
+                detalheAfastamento = {
+                    periodo: fd(iniAfast) + ' a ' + fd(fimAfast),
+                    diasPostergacao: diasPostergacao,
+                    inicioSobreposicao: inicioSobreposicao.toISOString().slice(0, 10),
+                    fimSobreposicao: fimSobreposicao.toISOString().slice(0, 10)
+                };
+            } else {
+                detalheAfastamento = {
+                    periodo: fd(iniAfast) + ' a ' + fd(fimAfast),
+                    diasPostergacao: 0,
+                    observacao: "O período de afastamento não se sobrepõe à janela do prazo de liberação, portanto não há postergação."
+                };
+            }
+        }
+    }
+
+    // ── PASSO 5: Aplica a data de efetiva liberação (sobrescreve) ──
+    if (temLiberacaoEfetiva) {
+        dataLiberacaoFinal = new Date(dataLiberacaoEfetivaNorm);
+        dataApresentacaoFinal = new Date(dataApresentacaoRecalculada);
+    }
+
+    // ── PASSO 6: Dias corridos e úteis ──
+    var diasCorridosLiberacao = Math.ceil((dataLiberacaoFinal - iniContagem) / (1000 * 60 * 60 * 24)) + 1;
+    var diasCorridosApresentacao = Math.ceil((dataApresentacaoFinal - dataLiberacaoFinal) / (1000 * 60 * 60 * 24)) + 1;
+
+    var diasUteisLiberacao = remDiasUteisEntre(iniContagem, dataLiberacaoFinal);
+    var diasUteisApresentacao = remDiasUteisEntre(dataLiberacaoFinal, dataApresentacaoFinal);
+
+    // ── PASSO 7: Status ──
+    var hoje = remNormalizeDate(new Date());
+    var status = {
+        situacao: "AGUARDANDO",
+        cor: REM_COR_AZUL,
+        mensagem: "",
+        diasRestantes: null,
+        diasParaApresentar: null,
+        diasAtraso: null
+    };
+
+    if (hoje < dataLiberacaoFinal) {
+        var diasRestantes = Math.ceil((dataLiberacaoFinal - hoje) / (1000 * 60 * 60 * 24));
+        status.situacao = "PRAZO DE LIBERAÇÃO EM CURSO";
+        status.cor = REM_COR_AMARELO;
+        status.mensagem = "Faltam " + diasRestantes + " dia(s) para a liberação.";
+        status.diasRestantes = diasRestantes;
+    } else if (hoje >= dataLiberacaoFinal && hoje <= dataApresentacaoFinal) {
+        var diasParaApresentar = Math.ceil((dataApresentacaoFinal - hoje) / (1000 * 60 * 60 * 24));
+        status.situacao = "LIBERADO — AGUARDANDO APRESENTAÇÃO";
+        status.cor = REM_COR_VERDE;
+        status.mensagem = "Servidor liberado. Prazo para apresentação: " + diasParaApresentar + " dia(s).";
+        status.diasParaApresentar = diasParaApresentar;
+    } else if (hoje > dataApresentacaoFinal) {
+        var diasAtraso = Math.ceil((hoje - dataApresentacaoFinal) / (1000 * 60 * 60 * 24));
+        status.situacao = "PRAZO DE APRESENTAÇÃO EXCEDIDO";
+        status.cor = REM_COR_VERMELHO;
+        status.mensagem = "Prazo de apresentação vencido há " + diasAtraso + " dia(s).";
+        status.diasAtraso = diasAtraso;
+    }
+
+    if (temLiberacaoEfetiva) {
+        status.cor = REM_COR_ROXO;
+        status.situacao = "LIBERAÇÃO EFETIVADA";
+        status.mensagem = "Servidor liberado em " + fd(dataLiberacaoEfetiva) + 
+                         (diasAntecipacao > 0 ? " — " + diasAntecipacao + " dia(s) antes do prazo" : 
+                          diasAntecipacao < 0 ? " — " + Math.abs(diasAntecipacao) + " dia(s) após o prazo" : 
+                          " — exatamente no prazo");
+    }
+
+    return {
+        dataPublicacao: dataPublicacao,
+        dataLiberacao: dataLiberacaoFinal.toISOString().slice(0, 10),
+        dataApresentacao: dataApresentacaoFinal.toISOString().slice(0, 10),
+        dataLiberacaoOriginal: dataLiberacaoBase.toISOString().slice(0, 10),
+        dataApresentacaoOriginal: dataApresentacaoBase.toISOString().slice(0, 10),
+        diasCorridosLiberacao: diasCorridosLiberacao,
+        diasCorridosApresentacao: diasCorridosApresentacao,
+        diasUteisLiberacao: diasUteisLiberacao,
+        diasUteisApresentacao: diasUteisApresentacao,
+        temAfastamento: temAfastamento,
+        afastamentoAtivo: afastamentoAtivo,
+        diasPostergacao: diasPostergacao,
+        detalheAfastamento: detalheAfastamento,
+        temLiberacaoEfetiva: temLiberacaoEfetiva,
+        dataLiberacaoEfetiva: temLiberacaoEfetiva ? dataLiberacaoEfetiva : null,
+        diasAntecipacao: temLiberacaoEfetiva ? diasAntecipacao : 0,
+        status: status,
+        inicioContagem: iniContagem.toISOString().slice(0, 10),
+    };
+}
+
+function doCalcRemocao() {
+    var v = UI.rem;
+
+    if (!v.nome.trim()) { showErr("Informe o nome do servidor."); return; }
+    if (!v.dataPublicacao) { showErr("Informe a data da publicação da remoção."); return; }
+
+    if (v.temAfastamento) {
+        if (!v.dataInicioAfastamento || !v.dataFimAfastamento) {
+            showErr("Informe o período do afastamento.");
+            return;
+        }
+        if (v.dataFimAfastamento < v.dataInicioAfastamento) {
+            showErr("A data de fim do afastamento é anterior à data de início.");
+            return;
+        }
+    }
+
+    if (v.dataLiberacaoEfetiva) {
+        var libEf = pd(v.dataLiberacaoEfetiva);
+        var pub = pd(v.dataPublicacao);
+        if (libEf && pub && libEf < pub) {
+            showErr("A data de efetiva liberação não pode ser anterior à data da publicação.");
+            return;
+        }
+        var prazoMax = new Date(pub);
+        prazoMax.setDate(prazoMax.getDate() + (REM_PRAZO_LIBERACAO - 1));
+        if (libEf && libEf > prazoMax) {
+            showErr("A data de efetiva liberação deve ser dentro do prazo de " + REM_PRAZO_LIBERACAO + " dias (até " + fd(prazoMax.toISOString().slice(0,10)) + ").");
+            return;
+        }
+    }
+
+    var res = calcRemocao(
+        v.dataPublicacao,
+        v.temAfastamento,
+        v.dataInicioAfastamento,
+        v.dataFimAfastamento,
+        v.dataLiberacaoEfetiva
+    );
+
+    if (!res) { showErr("Erro ao calcular. Verifique os dados informados."); return; }
+
+    UI.rem.res = res;
+    UI.err = false;
+    render();
+
+    setTimeout(function() {
+        var memo = document.querySelector('.memo-remocao');
+        if (memo) {
+            var r = memo.getBoundingClientRect();
+            window.scrollTo({ top: window.scrollY + r.top - 70, behavior: 'smooth' });
+        }
+    }, 120);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+
+function render() {
+    var v = UI.rem;
+    var res = v.res;
+
+    var h = '<div class="ptitle">Cálculo Remoção SGP</div>';
+    h += '<div class="psubt">Prazos de liberação e apresentação — Art. 36, Lei 8.112/90</div>';
+
+    // Base legal
+    h += '<div class="norm"><div class="norm-t">Base Legal</div>';
+    h += '<div class="norm-b">';
+    h += 'Art. 36, Lei nº 8.112/1990:<br>';
+    h += '• <strong>' + REM_PRAZO_LIBERACAO + ' dias corridos</strong> para liberação da unidade de origem, ';
+    h += 'contados da data da publicação da remoção (o dia da publicação <strong>entra na contagem</strong>).<br>';
+    h += '• <strong>' + REM_PRAZO_APRESENTACAO + ' dias corridos</strong> para apresentação na nova unidade, ';
+    h += 'contados da data da <strong>efetiva liberação</strong> (o dia da liberação <strong>entra na contagem</strong>).';
+    h += '<br><span style="font-size:11px;color:var(--t3)">Exemplo: Publicação em 01/06/2026 → liberação até 10/06/2026 → apresentação até 29/06/2026 (20 dias contados da liberação).</span>';
+    h += '<br><span style="font-size:11px;color:var(--t3)">Se houver afastamento em curso que se sobreponha à janela do prazo de liberação, ';
+    h += 'o prazo de liberação fica postergado (Art. 36, § 2º).</span>';
+    h += '<br><span style="font-size:11px;color:var(--t3)">É possível informar a <strong>data de efetiva liberação</strong> dentro do prazo de 10 dias ';
+    h += 'para recálculo automático da data de apresentação.</span>';
+    h += '</div></div>';
+
+    // Identificação
+    h += '<div class="card" id="card-ident"><div class="cht">Identificação do Servidor</div>';
+    h += '<div class="g2">';
+    h += '<div class="fl"><label for="ident-nome-rem">Nome</label>';
+    h += '<input type="text" id="ident-nome-rem" value="' + e(v.nome) + '" oninput="UI.rem.nome=this.value" onblur="applyTitleCase(this,UI[\'rem\'])" placeholder="Nome completo"/>';
+    h += '</div>';
+    h += '<div class="fl"><label for="ident-siape-rem">SIAPE</label>';
+    h += '<input type="text" id="ident-siape-rem" value="' + e(v.siape || '') + '" oninput="UI.rem.siape=this.value" placeholder="ex: 1234567"/>';
+    h += '</div>';
+    h += '</div></div>';
+
+    // Dados da remoção
+    h += '<div class="card"><div class="cht">Dados da Remoção</div>';
+
+    h += '<div class="g2 mt10">';
+    h += '<div class="fl"><label for="rem-data-publicacao">Data da Publicação <span style="font-weight:400;font-size:10px;color:var(--t3)">(entra na contagem — Dia 1)</span></label>';
+    h += '<input type="date" id="rem-data-publicacao" value="' + e(v.dataPublicacao || '') + '"';
+    h += ' onchange="UI.rem.dataPublicacao=this.value;UI.rem.res=null;render()"';
+    h += '/>';
+    h += '<span class="hint">Exemplo: 01/06/2026 → Dia 1 = 01/06, Dia 10 = 10/06</span>';
+    h += '</div>';
+    h += '</div>';
+
+    // Afastamento
+    h += '<div class="mt12" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r6)">';
+    h += '<input type="checkbox" id="rem-tem-afastamento" ' + (v.temAfastamento ? 'checked' : '') + '';
+    h += ' onchange="UI.rem.temAfastamento=this.checked;UI.rem.res=null;render()"';
+    h += ' style="width:16px;height:16px;cursor:pointer;accent-color:var(--g);flex-shrink:0"/>';
+    h += '<label for="rem-tem-afastamento" style="cursor:pointer;font-size:13px;color:var(--t);font-weight:500;user-select:none">';
+    h += 'Servidor em afastamento (licença, férias, etc.) no momento da publicação?';
+    h += '</label>';
+    h += '</div>';
+
+    if (v.temAfastamento) {
+        h += '<div class="g2 mt12">';
+        h += '<div class="fl"><label for="rem-inicio-afastamento">Data de Início do Afastamento</label>';
+        h += '<input type="date" id="rem-inicio-afastamento" value="' + e(v.dataInicioAfastamento || '') + '"';
+        h += ' onchange="UI.rem.dataInicioAfastamento=this.value;UI.rem.res=null;render()"';
+        h += '/>';
+        h += '</div>';
+        h += '<div class="fl"><label for="rem-fim-afastamento">Data de Fim do Afastamento</label>';
+        h += '<input type="date" id="rem-fim-afastamento" value="' + e(v.dataFimAfastamento || '') + '"';
+        h += ' onchange="UI.rem.dataFimAfastamento=this.value;UI.rem.res=null;render()"';
+        h += '/>';
+        h += '</div></div>';
+        h += '<div class="remocao-afastamento-info">';
+        h += '⚠ O período de afastamento em vigor <strong>posterga</strong> o prazo de liberação ';
+        h += 'se houver sobreposição com a janela do prazo. ';
+        h += 'O prazo de apresentação é recalculado a partir da nova data de liberação.';
+        h += '</div>';
+    }
+
+    // Data de Efetiva Liberação
+    h += '<div class="mt12">';
+    h += '<div class="fl"><label for="rem-data-liberacao-efetiva">Data de Efetiva Liberação <span style="font-weight:400;font-size:10px;color:var(--t3)">(opcional — dentro do prazo de ' + REM_PRAZO_LIBERACAO + ' dias)</span></label>';
+    h += '<input type="date" id="rem-data-liberacao-efetiva" value="' + e(v.dataLiberacaoEfetiva || '') + '"';
+    h += ' onchange="UI.rem.dataLiberacaoEfetiva=this.value;UI.rem.res=null;render()"';
+    h += '/>';
+    h += '<span class="hint">Informe a data em que o servidor foi efetivamente liberado. O sistema recalculará a data de apresentação a partir desta data.</span>';
+    h += '</div></div>';
+
+    // Observação
+    h += '<div class="mt14" style="border-top:1px solid var(--bd);padding-top:12px">';
+    h += '<div class="fl"><label for="rem-obs">Observação <span style="font-size:10px;font-weight:400;color:var(--t3)">livre — máx. 250 caracteres</span></label>';
+    h += '<textarea id="rem-obs" maxlength="250" rows="3" style="width:100%;padding:9px 12px;font-size:13px;font-family:var(--ff);color:var(--t);border:1.5px solid var(--bd2);border-radius:var(--r6);background:var(--sf);outline:none;resize:vertical;transition:border-color .15s;line-height:1.5" onfocus="this.style.borderColor=\'var(--g)\'" onblur="this.style.borderColor=\'var(--bd2)\'" oninput="UI.rem.obs=this.value;document.getElementById(\'rem-obs-cnt\').textContent=(250-this.value.length);" placeholder="Observações, notas ou informações adicionais sobre esta remoção...">' + e(v.obs || '') + '</textarea>';
+    h += '<span class="hint"><span id="rem-obs-cnt">' + (250 - (v.obs || '').length) + '</span> caracteres restantes</span>';
+    h += '</div></div>';
+    h += '</div>';
+
+    // Botões
+    h += '<div class="brow">';
+    h += '<button class="btn b-g" onclick="doCalcRemocao()">→ Calcular Remoção</button>';
+    if (res) {
+        h += '<button class="btn b-s" onclick="imprimirPDF()">📄 PDF</button>';
+        h += '<button class="btn b-s" onclick="UI.rem.res=null;render()">Limpar</button>';
+    }
+    h += '</div>';
+
+    if (UI.err && UI.errMsg) h += '<div class="err-box">' + UI.errMsg + '</div>';
+    if (UI.ok && UI.okMsg) h += '<div class="ok-box"><div class="ok-dot">✓</div><div style="font-size:13px;color:#166534;font-weight:500">' + UI.okMsg + '</div></div>';
+
+    // Resultado
+    if (res) {
+        h += renderResultado(res, v);
+    }
+
+    document.getElementById('con').innerHTML = h;
+}
+
+function renderResultado(res, v) {
+    var h = '';
+
+    h += '<div class="memo memo-remocao"><div class="memo-t">' + svg('', 14, "#BF8C14") + ' 📋 Memória de Cálculo</div>';
+
+    // Parâmetros
+    h += '<div class="ms"><div class="ms-l">Parâmetros</div>';
+    h += '<div class="ms-t">Data da Publicação: <strong style="color:#BF8C14">' + fd(res.dataPublicacao) + '</strong> <span style="font-size:11px;color:var(--t3)">(Dia 1 da contagem para liberação)</span></div>';
+    h += '<div class="ms-t">Prazo para liberação: <strong>' + REM_PRAZO_LIBERACAO + ' dias corridos</strong> (Dia ' + REM_PRAZO_LIBERACAO + ' = ' + fd(res.dataLiberacaoOriginal) + ')</div>';
+    h += '<div class="ms-t">Prazo para apresentação: <strong>' + REM_PRAZO_APRESENTACAO + ' dias corridos</strong> contados da liberação</div>';
+    
+    if (res.temLiberacaoEfetiva) {
+        h += '<div class="ms-t" style="color:#8B5CF6">🟣 Data de efetiva liberação: <strong>' + fd(res.dataLiberacaoEfetiva) + '</strong></div>';
+        h += '<div class="ms-t" style="color:#8B5CF6">' + 
+             (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' : 
+              res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+              '✅ Exatamente no prazo') + '</div>';
+    }
+
+    if (res.temAfastamento && res.detalheAfastamento) {
+        if (res.afastamentoAtivo) {
+            h += '<div class="ms-t" style="color:var(--am)">⚠ Afastamento em vigência com sobreposição: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
+            h += '<div class="ms-t" style="color:var(--am)">Postergação da liberação: <strong>+' + res.diasPostergacao + ' dia(s)</strong></div>';
+        } else {
+            h += '<div class="ms-t" style="color:var(--t3)">ℹ️ Afastamento informado, mas sem sobreposição com a janela do prazo de liberação.</div>';
+            if (res.detalheAfastamento.observacao) {
+                h += '<div class="ms-t" style="font-size:11px;color:var(--t3)">' + res.detalheAfastamento.observacao + '</div>';
+            }
+        }
+    }
+    h += '</div>';
+
+    // Timeline
+    h += '<div class="ms"><div class="ms-l">Linha do Tempo</div>';
+    h += '<div class="remocao-timeline">';
+
+    var eventos = [
+        { data: res.inicioContagem, label: 'Publicação da Remoção', desc: 'Dia 1 — início da contagem do prazo de liberação', cor: REM_COR_AZUL },
+        { data: res.dataLiberacao, label: 'Liberação do Servidor', desc: res.temLiberacaoEfetiva ? 'Data efetiva da liberação' : 'Dia ' + REM_PRAZO_LIBERACAO + ' — prazo para liberação', cor: res.temLiberacaoEfetiva ? REM_COR_ROXO : (res.afastamentoAtivo ? REM_COR_AMARELO : REM_COR_VERDE) },
+        { data: res.dataApresentacao, label: 'Prazo Final para Apresentação', desc: 'Dia ' + REM_PRAZO_APRESENTACAO + ' contado da liberação — limite para apresentação', cor: REM_COR_VERMELHO }
+    ];
+
+    var hoje = remNormalizeDate(new Date());
+    eventos.forEach(function(ev, idx) {
+        var dt = pd(ev.data);
+        var passado = dt && dt < hoje;
+        var hojeFlag = dt && dt.getTime() === hoje.getTime();
+
+        h += '<div class="evento">';
+        h += '<div class="marcador ' + ev.cor + '" style="' + (passado && !hojeFlag ? 'opacity:0.5' : '') + '">' + (idx + 1) + '</div>';
+        h += '<div class="conteudo">';
+        h += '<div class="data">' + fd(ev.data) + (hojeFlag ? ' <span style="font-size:10px;font-weight:700;color:#3B82F6">← HOJE</span>' : '') + '</div>';
+        h += '<div class="desc">' + ev.label + '</div>';
+        h += '<div class="dias">' + ev.desc + '</div>';
+        h += '</div>';
+        h += '</div>';
+    });
+
+    h += '</div></div>';
+
+    // Resumo
+    h += '<div class="ms" style="border-color:rgba(191,140,20,.35)"><div class="ms-l">Resumo dos Prazos</div>';
+    h += '<div class="remocao-resumo-grid">';
+
+    var corLiberacao = res.temLiberacaoEfetiva ? REM_COR_ROXO : res.status.cor;
+    h += '<div class="item">';
+    h += '<div class="label">Liberação</div>';
+    h += '<div class="valor ' + corLiberacao + '">' + fd(res.dataLiberacao) + '</div>';
+    h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">' + res.diasCorridosLiberacao + 'º dia corrido da publicação</div>';
+    if (res.diasUteisLiberacao > 0) {
+        h += '<div style="font-size:10px;color:var(--t4)">~' + res.diasUteisLiberacao + ' dias úteis</div>';
+    }
+    if (res.temLiberacaoEfetiva) {
+        h += '<div style="font-size:10px;color:#8B5CF6;margin-top:2px">🟣 Efetiva</div>';
+    }
+    h += '</div>';
+
+    var corApresentacao = res.status.cor;
+    h += '<div class="item">';
+    h += '<div class="label">Apresentação</div>';
+    h += '<div class="valor ' + corApresentacao + '">' + fd(res.dataApresentacao) + '</div>';
+    h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">' + res.diasCorridosApresentacao + 'º dia corrido da liberação</div>';
+    if (res.diasUteisApresentacao > 0) {
+        h += '<div style="font-size:10px;color:var(--t4)">~' + res.diasUteisApresentacao + ' dias úteis</div>';
+    }
+    h += '</div>';
+
+    var bgColor = res.status.cor === REM_COR_VERDE ? 'var(--ok-bg)' :
+                  res.status.cor === REM_COR_AMARELO ? 'var(--am-bg)' :
+                  res.status.cor === REM_COR_VERMELHO ? 'var(--er-bg)' :
+                  res.status.cor === REM_COR_ROXO ? 'rgba(139,92,246,.12)' : 'var(--sf2)';
+    var bdColor = res.status.cor === REM_COR_VERDE ? 'var(--ok-bd)' :
+                  res.status.cor === REM_COR_AMARELO ? 'var(--am-bd)' :
+                  res.status.cor === REM_COR_VERMELHO ? 'var(--er-bd)' :
+                  res.status.cor === REM_COR_ROXO ? 'rgba(139,92,246,.3)' : 'var(--bd)';
+
+    h += '<div class="item" style="background:' + bgColor + ';border-color:' + bdColor + '">';
+    h += '<div class="label">Situação Atual</div>';
+    h += '<div class="valor ' + res.status.cor + '" style="font-size:15px">' + REM_STATUS_ICONS[res.status.cor] + ' ' + res.status.situacao + '</div>';
+    h += '<div style="font-size:11px;color:var(--t2);margin-top:4px">' + res.status.mensagem + '</div>';
+    h += '</div>';
+
+    h += '</div></div>';
+
+    // Detalhe do afastamento
+    if (res.temAfastamento && res.afastamentoAtivo) {
+        h += '<div class="ms" style="border-color:rgba(234,179,8,.35);background:var(--am-bg)">';
+        h += '<div class="ms-l" style="color:var(--am)">Afastamento em Vigência — Postergação da Liberação</div>';
+        h += '<div class="ms-t">Período: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
+        h += '<div class="ms-t">Período de sobreposição com a janela do prazo de liberação: <strong>' + fd(res.detalheAfastamento.inicioSobreposicao) + ' a ' + fd(res.detalheAfastamento.fimSobreposicao) + '</strong></div>';
+        h += '<div class="ms-t">Dias de postergação: <strong style="color:var(--am)">+' + res.diasPostergacao + ' dias</strong></div>';
+        h += '<div class="ms-f" style="background:var(--sf2);border-left-color:var(--am-bd)">';
+        h += 'Liberação original: ' + fd(res.dataLiberacaoOriginal) + ' → ' + fd(res.dataLiberacao) + ' <span style="color:var(--am);font-weight:700">(postergado)</span>';
+        h += '</div>';
+        h += '<div class="ms-f" style="background:var(--sf2);border-left-color:var(--am-bd)">';
+        h += 'Apresentação recalculada: ' + fd(res.dataApresentacaoOriginal) + ' → ' + fd(res.dataApresentacao) + ' <span style="color:var(--am);font-weight:700">(a partir da nova liberação)</span>';
+        h += '</div>';
+        h += '<div class="ms-n">Art. 36, § 2º, Lei 8.112/90 — O prazo de liberação fica prorrogado pelo período de afastamento que se sobreponha à janela do prazo</div>';
+        h += '</div>';
+    }
+
+    // Detalhe da liberação efetiva
+    if (res.temLiberacaoEfetiva) {
+        h += '<div class="ms" style="border-color:rgba(139,92,246,.35);background:rgba(139,92,246,.06)">';
+        h += '<div class="ms-l" style="color:#7C3AED">🟣 Liberação Efetiva Informada</div>';
+        h += '<div class="ms-t">Data da efetiva liberação: <strong>' + fd(res.dataLiberacaoEfetiva) + '</strong></div>';
+        h += '<div class="ms-t">' + (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' : 
+                                   res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+                                   '✅ Exatamente no prazo') + '</div>';
+        h += '<div class="ms-f" style="background:var(--sf2);border-left-color:rgba(139,92,246,.3)">';
+        h += 'Nova data de apresentação calculada: <strong style="color:#7C3AED">' + fd(res.dataApresentacao) + '</strong> ';
+        h += '(' + REM_PRAZO_APRESENTACAO + ' dias contados da data de efetiva liberação — o dia da liberação conta como Dia 1)';
+        h += '</div>';
+        h += '<div class="ms-n">Art. 36, Lei 8.112/90 — A contagem do prazo para apresentação inicia-se a partir da data da efetiva liberação</div>';
+        h += '</div>';
+    }
+
+    h += '</div>'; // fecha memo
+
+    // Tabela resumo
+    h += '<div class="card"><div class="ch">Resumo para Documentação</div>';
+    h += '<div class="tw"><table class="dt">';
+    h += '<thead><tr><th>Evento</th><th>Data</th><th>Contagem</th><th>Dias Úteis (aprox.)</th></tr></thead>';
+    h += '<tbody>';
+    h += '<tr><td><strong>Publicação</strong></td><td>' + fd(res.dataPublicacao) + '</td><td>Dia 1 (marco zero)</td><td>—</td></tr>';
+    h += '<tr><td><strong>Liberação</strong></td><td>' + fd(res.dataLiberacao) + '</td><td>' + res.diasCorridosLiberacao + 'º dia da publicação</td><td>' + (res.diasUteisLiberacao > 0 ? res.diasUteisLiberacao + ' dias' : '—') + '</td></tr>';
+    h += '<tr><td><strong>Apresentação</strong></td><td>' + fd(res.dataApresentacao) + '</td><td>' + res.diasCorridosApresentacao + 'º dia da liberação</td><td>' + (res.diasUteisApresentacao > 0 ? res.diasUteisApresentacao + ' dias' : '—') + '</td></tr>';
+    if (res.temLiberacaoEfetiva) {
+        h += '<tr style="background:rgba(139,92,246,.08)"><td colspan="4" style="font-size:11px;color:#7C3AED">🟣 Data de efetiva liberação: ' + fd(res.dataLiberacaoEfetiva) + ' — ' + 
+             (res.diasAntecipacao > 0 ? res.diasAntecipacao + ' dia(s) antes do prazo' : 
+              res.diasAntecipacao < 0 ? Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+              'exatamente no prazo') + '</td></tr>';
+    }
+    if (res.temAfastamento && res.afastamentoAtivo) {
+        h += '<tr style="background:var(--am-bg)"><td colspan="4" style="font-size:11px;color:var(--am)">⚠ Afastamento em vigor — liberação postergada em ' + res.diasPostergacao + ' dia(s)</td></tr>';
+    }
+    if (res.temAfastamento && !res.afastamentoAtivo && res.detalheAfastamento && res.detalheAfastamento.observacao) {
+        h += '<tr style="background:var(--sf2)"><td colspan="4" style="font-size:11px;color:var(--t3)">ℹ️ ' + res.detalheAfastamento.observacao + '</td></tr>';
+    }
+    h += '</tbody></table></div>';
+
+    if (v.obs && v.obs.trim()) {
+        h += '<div style="margin-top:12px;padding:10px 14px;background:var(--sf2);border-radius:var(--r6);font-size:12px;color:var(--t2)">';
+        h += '<strong>Observação:</strong> ' + e(v.obs);
+        h += '</div>';
+    }
+
+    var corVBig = res.status.cor === REM_COR_VERMELHO ? 'v-deb' : 
+                  res.status.cor === REM_COR_ROXO ? 'v-am' : 'v-cred';
+    h += '<div class="v-big ' + corVBig + '" style="margin-top:12px">';
+    h += REM_STATUS_ICONS[res.status.cor] + ' ' + res.status.situacao + ' — ' + res.status.mensagem;
+    h += '</div>';
+    h += '</div>';
+
+    return h;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PDF
+// ═══════════════════════════════════════════════════════════════════
+
+function imprimirPDF() {
+    window.print();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+
+render();
+</script>
+</body>
+</html>
