@@ -505,7 +505,7 @@ table.dt tbody tr:hover td { background: var(--g-pale); }
             <div style="font-size:20px;font-weight:800;color:var(--n)">Cálculo Remoção <span style="font-weight:400;color:var(--t3)">·</span> <span style="font-weight:400;color:var(--t2)">SGP</span></div>
             <div style="font-size:11px;color:var(--t3)">Prazos de liberação e apresentação — Art. 36, Lei 8.112/90</div>
         </div>
-        <div style="font-size:11px;color:var(--t4)">v3.0</div>
+        <div style="font-size:11px;color:var(--t4)">v3.1</div>
     </div>
 
     <!-- Conteúdo -->
@@ -513,7 +513,7 @@ table.dt tbody tr:hover td { background: var(--g-pale); }
 
     <!-- Rodapé -->
     <div style="margin-top:30px;padding-top:12px;border-top:1px solid var(--bd);font-size:10px;color:var(--t4);text-align:center">
-        Cálculo Remoção SGP
+        Cálculo Remoção SGP — Sistema de Acertos Financeiros
     </div>
 </div>
 
@@ -543,6 +543,12 @@ function toTitleCase(str) {
         if (i > 0 && particulas.indexOf(w.toLowerCase()) !== -1) return w.toLowerCase();
         return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     }).join(' ');
+}
+
+function remNormalizeDate(d) {
+    var result = new Date(d);
+    result.setHours(0, 0, 0, 0);
+    return result;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -590,12 +596,6 @@ const REM_STATUS_ICONS = {
 // CÁLCULO
 // ═══════════════════════════════════════════════════════════════════
 
-function remNormalizeDate(d) {
-    var result = new Date(d);
-    result.setHours(0, 0, 0, 0);
-    return result;
-}
-
 function remDiasUteisEntre(d1, d2) {
     if (!d1 || !d2 || d1 > d2) return 0;
     var count = 0;
@@ -621,45 +621,15 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
     var iniContagem = new Date(pubNorm);
 
     // ── PASSO 1: Data de Liberação ──
-    // Prazo de 10 dias contados da publicação (dia da publicação = Dia 1)
-    // Dia 10 = data da publicação + 9 dias
     var dataLiberacaoBase = new Date(iniContagem);
     dataLiberacaoBase.setDate(dataLiberacaoBase.getDate() + (REM_PRAZO_LIBERACAO - 1));
 
     // ── PASSO 2: Data de Apresentação ──
-    // Prazo de 20 dias contados da data da LIBERAÇÃO
-    // Se não houver liberação efetiva informada, usa a data de liberação calculada
-    // Dia 20 = data da liberação + 19 dias
     var dataLiberacaoReferencia = dataLiberacaoBase;
     var dataApresentacaoBase = new Date(dataLiberacaoReferencia);
     dataApresentacaoBase.setDate(dataApresentacaoBase.getDate() + (REM_PRAZO_APRESENTACAO - 1));
 
-    // ── PASSO 3: Verifica se foi informada uma data de efetiva liberação ──
-    var temLiberacaoEfetiva = false;
-    var dataLiberacaoEfetivaNorm = null;
-    var diasAntecipacao = 0;
-    var dataApresentacaoRecalculada = null;
-
-    if (dataLiberacaoEfetiva) {
-        var libEf = pd(dataLiberacaoEfetiva);
-        if (libEf) {
-            dataLiberacaoEfetivaNorm = remNormalizeDate(libEf);
-            // Verifica se a data está dentro do prazo de 10 dias
-            if (dataLiberacaoEfetivaNorm >= iniContagem && dataLiberacaoEfetivaNorm <= dataLiberacaoBase) {
-                temLiberacaoEfetiva = true;
-                // Calcula quantos dias de antecipação (ou atraso)
-                diasAntecipacao = Math.ceil((dataLiberacaoBase - dataLiberacaoEfetivaNorm) / (1000 * 60 * 60 * 24));
-                // Recalcula a data de apresentação: a partir da data de efetiva liberação + 20 dias
-                // O dia da liberação conta como Dia 1
-                dataApresentacaoRecalculada = new Date(dataLiberacaoEfetivaNorm);
-                dataApresentacaoRecalculada.setDate(dataApresentacaoRecalculada.getDate() + (REM_PRAZO_APRESENTACAO - 1));
-            }
-        }
-    }
-
-    // ── PASSO 4: Análise do afastamento ──
-    // O afastamento posterga APENAS a data de liberação
-    // A data de apresentação é sempre contada a partir da data de liberação (efetiva ou calculada)
+    // ── PASSO 3: Análise do afastamento ──
     var afastamentoAtivo = false;
     var diasPostergacao = 0;
     var detalheAfastamento = null;
@@ -674,7 +644,6 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
             var iniAfNorm = remNormalizeDate(iniAf);
             var fimAfNorm = remNormalizeDate(fimAf);
 
-            // Janela do prazo de liberação: da publicação até a data de liberação
             var inicioJanela = new Date(iniContagem);
             var fimJanela = new Date(dataLiberacaoBase);
 
@@ -688,7 +657,6 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
                 dataLiberacaoFinal = new Date(dataLiberacaoBase);
                 dataLiberacaoFinal.setDate(dataLiberacaoFinal.getDate() + diasPostergacao);
 
-                // A data de apresentação é recalculada a partir da nova data de liberação
                 dataApresentacaoFinal = new Date(dataLiberacaoFinal);
                 dataApresentacaoFinal.setDate(dataApresentacaoFinal.getDate() + (REM_PRAZO_APRESENTACAO - 1));
 
@@ -708,7 +676,27 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
         }
     }
 
-    // ── PASSO 5: Aplica a data de efetiva liberação (sobrescreve) ──
+    // ── PASSO 4: Verifica se foi informada uma data de efetiva liberação ──
+    var temLiberacaoEfetiva = false;
+    var dataLiberacaoEfetivaNorm = null;
+    var diasAntecipacao = 0;
+    var dataApresentacaoRecalculada = null;
+
+    if (dataLiberacaoEfetiva) {
+        var libEf = pd(dataLiberacaoEfetiva);
+        if (libEf) {
+            dataLiberacaoEfetivaNorm = remNormalizeDate(libEf);
+            // Verifica se a data está dentro do prazo de 10 dias (considerando postergação)
+            if (dataLiberacaoEfetivaNorm >= iniContagem && dataLiberacaoEfetivaNorm <= dataLiberacaoFinal) {
+                temLiberacaoEfetiva = true;
+                diasAntecipacao = Math.ceil((dataLiberacaoFinal - dataLiberacaoEfetivaNorm) / (1000 * 60 * 60 * 24));
+                dataApresentacaoRecalculada = new Date(dataLiberacaoEfetivaNorm);
+                dataApresentacaoRecalculada.setDate(dataApresentacaoRecalculada.getDate() + (REM_PRAZO_APRESENTACAO - 1));
+            }
+        }
+    }
+
+    // ── PASSO 5: Aplica a data de efetiva liberação ──
     if (temLiberacaoEfetiva) {
         dataLiberacaoFinal = new Date(dataLiberacaoEfetivaNorm);
         dataApresentacaoFinal = new Date(dataApresentacaoRecalculada);
@@ -800,17 +788,47 @@ function doCalcRemocao() {
         }
     }
 
+    // ── VALIDAÇÃO DA DATA DE EFETIVA LIBERAÇÃO ──
     if (v.dataLiberacaoEfetiva) {
         var libEf = pd(v.dataLiberacaoEfetiva);
         var pub = pd(v.dataPublicacao);
+        
         if (libEf && pub && libEf < pub) {
             showErr("A data de efetiva liberação não pode ser anterior à data da publicação.");
             return;
         }
+
+        // Calcula o prazo máximo de liberação CONSIDERANDO o afastamento
         var prazoMax = new Date(pub);
         prazoMax.setDate(prazoMax.getDate() + (REM_PRAZO_LIBERACAO - 1));
+
+        // Se há afastamento, calcula a postergação
+        if (v.temAfastamento && v.dataInicioAfastamento && v.dataFimAfastamento) {
+            var iniAf = pd(v.dataInicioAfastamento);
+            var fimAf = pd(v.dataFimAfastamento);
+            
+            if (iniAf && fimAf && fimAf >= iniAf) {
+                var inicioJanela = new Date(pub);
+                var fimJanela = new Date(prazoMax);
+                
+                var iniAfNorm = remNormalizeDate(iniAf);
+                var fimAfNorm = remNormalizeDate(fimAf);
+                var inicioJanelaNorm = remNormalizeDate(inicioJanela);
+                var fimJanelaNorm = remNormalizeDate(fimJanela);
+                
+                var inicioSobreposicao = new Date(Math.max(inicioJanelaNorm.getTime(), iniAfNorm.getTime()));
+                var fimSobreposicao = new Date(Math.min(fimJanelaNorm.getTime(), fimAfNorm.getTime()));
+                
+                if (fimSobreposicao >= inicioSobreposicao) {
+                    var diasPostergacao = Math.ceil((fimSobreposicao - inicioSobreposicao) / (1000 * 60 * 60 * 24)) + 1;
+                    prazoMax = new Date(prazoMax);
+                    prazoMax.setDate(prazoMax.getDate() + diasPostergacao);
+                }
+            }
+        }
+
         if (libEf && libEf > prazoMax) {
-            showErr("A data de efetiva liberação deve ser dentro do prazo de " + REM_PRAZO_LIBERACAO + " dias (até " + fd(prazoMax.toISOString().slice(0,10)) + ").");
+            showErr("A data de efetiva liberação deve ser dentro do prazo de " + REM_PRAZO_LIBERACAO + " dias, considerando o afastamento (até " + fd(prazoMax.toISOString().slice(0,10)) + ").");
             return;
         }
     }
@@ -860,7 +878,7 @@ function render() {
     h += '<br><span style="font-size:11px;color:var(--t3)">Exemplo: Publicação em 01/06/2026 → liberação até 10/06/2026 → apresentação até 29/06/2026 (20 dias contados da liberação).</span>';
     h += '<br><span style="font-size:11px;color:var(--t3)">Se houver afastamento em curso que se sobreponha à janela do prazo de liberação, ';
     h += 'o prazo de liberação fica postergado (Art. 36, § 2º).</span>';
-    h += '<br><span style="font-size:11px;color:var(--t3)">É possível informar a <strong>data de efetiva liberação</strong> dentro do prazo de 10 dias ';
+    h += '<br><span style="font-size:11px;color:var(--t3)">É possível informar a <strong>data de efetiva liberação</strong> dentro do prazo de 10 dias (considerando postergação) ';
     h += 'para recálculo automático da data de apresentação.</span>';
     h += '</div></div>';
 
@@ -917,8 +935,38 @@ function render() {
     }
 
     // Data de Efetiva Liberação
+    // Calcula o prazo máximo com postergação para exibir no hint
+    var prazoMaxHint = "";
+    if (v.dataPublicacao) {
+        var pub = pd(v.dataPublicacao);
+        if (pub) {
+            var prazoMax = new Date(pub);
+            prazoMax.setDate(prazoMax.getDate() + (REM_PRAZO_LIBERACAO - 1));
+            
+            if (v.temAfastamento && v.dataInicioAfastamento && v.dataFimAfastamento) {
+                var iniAf = pd(v.dataInicioAfastamento);
+                var fimAf = pd(v.dataFimAfastamento);
+                if (iniAf && fimAf && fimAf >= iniAf) {
+                    var inicioJanela = new Date(pub);
+                    var fimJanela = new Date(prazoMax);
+                    var iniAfNorm = remNormalizeDate(iniAf);
+                    var fimAfNorm = remNormalizeDate(fimAf);
+                    var inicioJanelaNorm = remNormalizeDate(inicioJanela);
+                    var fimJanelaNorm = remNormalizeDate(fimJanela);
+                    var inicioSobreposicao = new Date(Math.max(inicioJanelaNorm.getTime(), iniAfNorm.getTime()));
+                    var fimSobreposicao = new Date(Math.min(fimJanelaNorm.getTime(), fimAfNorm.getTime()));
+                    if (fimSobreposicao >= inicioSobreposicao) {
+                        var diasPostergacao = Math.ceil((fimSobreposicao - inicioSobreposicao) / (1000 * 60 * 60 * 24)) + 1;
+                        prazoMax.setDate(prazoMax.getDate() + diasPostergacao);
+                    }
+                }
+            }
+            prazoMaxHint = " (até " + fd(prazoMax.toISOString().slice(0,10)) + ")";
+        }
+    }
+
     h += '<div class="mt12">';
-    h += '<div class="fl"><label for="rem-data-liberacao-efetiva">Data de Efetiva Liberação <span style="font-weight:400;font-size:10px;color:var(--t3)">(opcional — dentro do prazo de ' + REM_PRAZO_LIBERACAO + ' dias)</span></label>';
+    h += '<div class="fl"><label for="rem-data-liberacao-efetiva">Data de Efetiva Liberação <span style="font-weight:400;font-size:10px;color:var(--t3)">(opcional — dentro do prazo de ' + REM_PRAZO_LIBERACAO + ' dias' + prazoMaxHint + ')</span></label>';
     h += '<input type="date" id="rem-data-liberacao-efetiva" value="' + e(v.dataLiberacaoEfetiva || '') + '"';
     h += ' onchange="UI.rem.dataLiberacaoEfetiva=this.value;UI.rem.res=null;render()"';
     h += '/>';
