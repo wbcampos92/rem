@@ -635,9 +635,9 @@ table.dt tbody tr:hover td { background: var(--g-pale); }
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 16px;border-bottom:2px solid var(--g)">
         <div>
             <div style="font-size:20px;font-weight:800;color:var(--n)">Cálculo Remoção <span style="font-weight:400;color:var(--t3)">·</span> <span style="font-weight:400;color:var(--t2)">SGP</span></div>
-            <div style="font-size:11px;color:var(--t3)">Prazos de liberação e apresentação — Art. 36, Lei 8.112/90</div>
+            <div style="font-size:11px;color:var(--t3)">Prazos de liberação e deslocamento — Art. 28, IN/DGP nº 1/2010</div>
         </div>
-        <div style="font-size:11px;color:var(--t4)">v3.2</div>
+        <div style="font-size:11px;color:var(--t4)">v3.3</div>
     </div>
 
     <!-- Conteúdo -->
@@ -709,8 +709,10 @@ var UI = {
 // CONSTANTES
 // ═══════════════════════════════════════════════════════════════════
 
-const REM_PRAZO_LIBERACAO = 10;
-const REM_PRAZO_APRESENTACAO = 20;
+const REM_PRAZO_LIBERACAO = 10;       // SGP tem 10 dias para expedir guia (§1º Art. 28)
+const REM_PRAZO_DESLOCAMENTO = 20;    // 20 dias para deslocamento após liberação
+const REM_PRAZO_TOTAL = 30;           // 30 dias totais da publicação (caput Art. 28)
+const REM_PRAZO_APRESENTACAO = REM_PRAZO_DESLOCAMENTO; // alias
 const REM_COR_VERDE = 'verde';
 const REM_COR_AMARELO = 'amarelo';
 const REM_COR_VERMELHO = 'vermelho';
@@ -800,158 +802,138 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
     if (!pub) return null;
 
     var pubNorm = remNormalizeDate(pub);
-    var iniContagem = new Date(pubNorm);
+    var iniContagem = new Date(pubNorm); // Dia 1
 
-    // ── PASSO 1: Data de Liberação ──
-    var dataLiberacaoBase = new Date(iniContagem);
-    dataLiberacaoBase.setDate(dataLiberacaoBase.getDate() + (REM_PRAZO_LIBERACAO - 1));
-
-    // ── PASSO 2: Verifica se afastamento começou ANTES da publicação ──
+    // ── PASSO 1: Afastamento em curso antes da publicação (§ 2º) ──
+    // Nesse caso os 30 dias contam a partir do término do afastamento
     var afastamentoAntesPublicacao = false;
     var dataLiberacaoAfastamento = null;
-    
+
     if (temAfastamento && iniAfast && fimAfast) {
         var iniAf = pd(iniAfast);
-        if (iniAf && iniAf <= pub) {
+        if (iniAf && remNormalizeDate(iniAf) <= pubNorm) {
             afastamentoAntesPublicacao = true;
             var fimAf = pd(fimAfast);
             if (fimAf) {
-                // O dia seguinte ao fim do afastamento é o novo marco zero
-                var novoInicio = new Date(fimAf);
-                novoInicio.setDate(novoInicio.getDate() + 1);
-                dataLiberacaoBase = new Date(novoInicio);
-                dataLiberacaoBase.setDate(dataLiberacaoBase.getDate() + (REM_PRAZO_LIBERACAO - 1));
-                dataLiberacaoAfastamento = novoInicio;
+                var novoInicio = new Date(remNormalizeDate(fimAf));
+                novoInicio.setDate(novoInicio.getDate() + 1); // dia seguinte ao fim = Dia 1
+                dataLiberacaoAfastamento = new Date(novoInicio);
+                iniContagem = new Date(novoInicio);
             }
         }
     }
 
-    // ── PASSO 3: Data de Apresentação ──
-    var dataApresentacaoBase = new Date(dataLiberacaoBase);
-    dataApresentacaoBase.setDate(dataApresentacaoBase.getDate() + (REM_PRAZO_APRESENTACAO - 1));
+    // ── PASSO 2: Janela do SGP — dias 1 a 10 ──
+    // Dia 1 = iniContagem; Dia 10 = último dia para o SGP expedir a guia
+    var dataFimLiberacao = new Date(iniContagem);
+    dataFimLiberacao.setDate(dataFimLiberacao.getDate() + (REM_PRAZO_LIBERACAO - 1)); // +9 dias
 
-    // ── PASSO 4: Análise do afastamento (postergação normal) ──
+    // ── PASSO 3: Afastamento que se inicia APÓS a publicação — posterga a janela ──
     var afastamentoAtivo = false;
     var diasPostergacao = 0;
     var detalheAfastamento = null;
-    var dataLiberacaoFinal = new Date(dataLiberacaoBase);
-    var dataApresentacaoFinal = new Date(dataApresentacaoBase);
 
     if (temAfastamento && iniAfast && fimAfast && !afastamentoAntesPublicacao) {
-        var iniAf = pd(iniAfast);
-        var fimAf = pd(fimAfast);
-
-        if (iniAf && fimAf && fimAf >= iniAf) {
-            var iniAfNorm = remNormalizeDate(iniAf);
-            var fimAfNorm = remNormalizeDate(fimAf);
-
-            var inicioJanela = new Date(iniContagem);
-            var fimJanela = new Date(dataLiberacaoBase);
-
-            var inicioSobreposicao = new Date(Math.max(inicioJanela.getTime(), iniAfNorm.getTime()));
-            var fimSobreposicao = new Date(Math.min(fimJanela.getTime(), fimAfNorm.getTime()));
-
-            if (fimSobreposicao >= inicioSobreposicao) {
+        var iniAf2 = pd(iniAfast);
+        var fimAf2 = pd(fimAfast);
+        if (iniAf2 && fimAf2 && fimAf2 >= iniAf2) {
+            var iniAfNorm = remNormalizeDate(iniAf2);
+            var fimAfNorm = remNormalizeDate(fimAf2);
+            var iSob = new Date(Math.max(iniContagem.getTime(), iniAfNorm.getTime()));
+            var fSob = new Date(Math.min(dataFimLiberacao.getTime(), fimAfNorm.getTime()));
+            if (fSob >= iSob) {
                 afastamentoAtivo = true;
-                diasPostergacao = Math.ceil((fimSobreposicao - inicioSobreposicao) / (1000 * 60 * 60 * 24)) + 1;
-
-                dataLiberacaoFinal = new Date(dataLiberacaoBase);
-                dataLiberacaoFinal.setDate(dataLiberacaoFinal.getDate() + diasPostergacao);
-
-                dataApresentacaoFinal = new Date(dataLiberacaoFinal);
-                dataApresentacaoFinal.setDate(dataApresentacaoFinal.getDate() + (REM_PRAZO_APRESENTACAO - 1));
-
+                diasPostergacao = Math.ceil((fSob - iSob) / (1000 * 60 * 60 * 24)) + 1;
+                dataFimLiberacao.setDate(dataFimLiberacao.getDate() + diasPostergacao);
                 detalheAfastamento = {
                     periodo: fd(iniAfast) + ' a ' + fd(fimAfast),
                     diasPostergacao: diasPostergacao,
-                    inicioSobreposicao: inicioSobreposicao.toISOString().slice(0, 10),
-                    fimSobreposicao: fimSobreposicao.toISOString().slice(0, 10),
+                    inicioSobreposicao: iSob.toISOString().slice(0, 10),
+                    fimSobreposicao: fSob.toISOString().slice(0, 10),
                     tipo: 'postergacao'
                 };
             } else {
                 detalheAfastamento = {
                     periodo: fd(iniAfast) + ' a ' + fd(fimAfast),
                     diasPostergacao: 0,
-                    observacao: "O período de afastamento não se sobrepõe à janela do prazo de liberação, portanto não há postergação.",
+                    observacao: "O período de afastamento não se sobrepõe à janela do prazo de liberação.",
                     tipo: 'sem_sobreposicao'
                 };
             }
         }
     } else if (temAfastamento && iniAfast && fimAfast && afastamentoAntesPublicacao) {
-        // Afastamento começou antes da publicação
         afastamentoAtivo = true;
-        var fimAf = pd(fimAfast);
         detalheAfastamento = {
             periodo: fd(iniAfast) + ' a ' + fd(fimAfast),
             diasPostergacao: 0,
-            observacao: "O afastamento já estava em curso antes da publicação. O prazo de liberação começou a contar a partir do dia seguinte ao fim do afastamento.",
+            observacao: "O afastamento já estava em curso antes da publicação. A contagem dos 30 dias iniciou após o término.",
             tipo: 'antes_publicacao',
             novoInicio: dataLiberacaoAfastamento ? fd(dataLiberacaoAfastamento.toISOString().slice(0, 10)) : null
         };
     }
 
-    // ── PASSO 5: Verifica se foi informada uma data de efetiva liberação ──
+    // ── PASSO 4: Janela de trânsito — dias 11 a 30 ──
+    // Começa sempre no dia seguinte ao fim da janela de liberação (dia 11)
+    var inicioTransito = new Date(dataFimLiberacao);
+    inicioTransito.setDate(inicioTransito.getDate() + 1); // dia 11
+
+    // Fim do trânsito = dia 30 do marco zero
+    var dataApresentacao = new Date(iniContagem);
+    dataApresentacao.setDate(dataApresentacao.getDate() + (REM_PRAZO_TOTAL - 1)); // +29 dias
+    if (diasPostergacao > 0) {
+        dataApresentacao.setDate(dataApresentacao.getDate() + diasPostergacao);
+    }
+
+    // ── PASSO 5: Liberação efetiva informada ──
+    // A data efetiva de liberação pode ser qualquer dia da janela (dias 1–10).
+    // NÃO altera o prazo de apresentação (que é sempre o dia 30 fixo).
     var temLiberacaoEfetiva = false;
     var dataLiberacaoEfetivaNorm = null;
     var diasAntecipacao = 0;
-    var dataApresentacaoRecalculada = null;
 
     if (dataLiberacaoEfetiva) {
         var libEf = pd(dataLiberacaoEfetiva);
         if (libEf) {
             dataLiberacaoEfetivaNorm = remNormalizeDate(libEf);
-            // Verifica se a data está dentro do prazo de 10 dias (considerando postergação)
-            if (dataLiberacaoEfetivaNorm >= dataLiberacaoAfastamento || dataLiberacaoEfetivaNorm >= iniContagem) {
-                var prazoMax = dataLiberacaoFinal;
-                if (dataLiberacaoEfetivaNorm <= prazoMax) {
-                    temLiberacaoEfetiva = true;
-                    diasAntecipacao = Math.ceil((prazoMax - dataLiberacaoEfetivaNorm) / (1000 * 60 * 60 * 24));
-                    dataApresentacaoRecalculada = new Date(dataLiberacaoEfetivaNorm);
-                    dataApresentacaoRecalculada.setDate(dataApresentacaoRecalculada.getDate() + (REM_PRAZO_APRESENTACAO - 1));
-                }
+            if (dataLiberacaoEfetivaNorm >= iniContagem && dataLiberacaoEfetivaNorm <= dataFimLiberacao) {
+                temLiberacaoEfetiva = true;
+                diasAntecipacao = Math.ceil((dataFimLiberacao - dataLiberacaoEfetivaNorm) / (1000 * 60 * 60 * 24));
             }
         }
     }
 
-    // ── PASSO 6: Aplica a data de efetiva liberação ──
-    if (temLiberacaoEfetiva) {
-        dataLiberacaoFinal = new Date(dataLiberacaoEfetivaNorm);
-        dataApresentacaoFinal = new Date(dataApresentacaoRecalculada);
-    }
+    // A data de liberação exibida: efetiva (se informada) ou último dia da janela SGP
+    var dataLiberacaoExibida = temLiberacaoEfetiva ? new Date(dataLiberacaoEfetivaNorm) : new Date(dataFimLiberacao);
 
-    // ── PASSO 7: Dias corridos e úteis ──
+    // ── PASSO 6: Métricas ──
     var referenciaInicio = (afastamentoAntesPublicacao && dataLiberacaoAfastamento) ? dataLiberacaoAfastamento : iniContagem;
-    var diasCorridosLiberacao = Math.ceil((dataLiberacaoFinal - referenciaInicio) / (1000 * 60 * 60 * 24)) + 1;
-    var diasCorridosApresentacao = Math.ceil((dataApresentacaoFinal - dataLiberacaoFinal) / (1000 * 60 * 60 * 24)) + 1;
+    var diasCorridosLiberacao = Math.ceil((dataFimLiberacao - referenciaInicio) / (1000 * 60 * 60 * 24)) + 1;
+    var diasCorridosTransito  = Math.ceil((dataApresentacao - dataFimLiberacao) / (1000 * 60 * 60 * 24));
+    var diasUteisLiberacao    = remDiasUteisEntre(referenciaInicio, dataFimLiberacao);
+    var diasUteisTransito     = remDiasUteisEntre(inicioTransito, dataApresentacao);
 
-    var diasUteisLiberacao = remDiasUteisEntre(referenciaInicio, dataLiberacaoFinal);
-    var diasUteisApresentacao = remDiasUteisEntre(dataLiberacaoFinal, dataApresentacaoFinal);
-
-    // ── PASSO 8: Status ──
+    // ── PASSO 7: Status ──
     var hoje = remNormalizeDate(new Date());
-    var status = {
-        situacao: "AGUARDANDO",
-        cor: REM_COR_AZUL,
-        mensagem: "",
-        diasRestantes: null,
-        diasParaApresentar: null,
-        diasAtraso: null
-    };
+    var status = { situacao: "AGUARDANDO", cor: REM_COR_AZUL, mensagem: "", diasRestantes: null, diasParaApresentar: null, diasAtraso: null };
 
-    if (hoje < dataLiberacaoFinal) {
-        var diasRestantes = Math.ceil((dataLiberacaoFinal - hoje) / (1000 * 60 * 60 * 24));
+    if (hoje < iniContagem) {
+        status.situacao = "PUBLICAÇÃO FUTURA";
+        status.cor = REM_COR_AZUL;
+        status.mensagem = "A portaria ainda não está vigente.";
+    } else if (hoje <= dataFimLiberacao) {
+        var diasRestantes = Math.ceil((dataFimLiberacao - hoje) / (1000 * 60 * 60 * 24));
         status.situacao = "PRAZO DE LIBERAÇÃO EM CURSO";
         status.cor = REM_COR_AMARELO;
-        status.mensagem = "Faltam " + diasRestantes + " dia(s) para a liberação.";
+        status.mensagem = "Janela do SGP: faltam " + diasRestantes + " dia(s) para expirar o prazo de liberação.";
         status.diasRestantes = diasRestantes;
-    } else if (hoje >= dataLiberacaoFinal && hoje <= dataApresentacaoFinal) {
-        var diasParaApresentar = Math.ceil((dataApresentacaoFinal - hoje) / (1000 * 60 * 60 * 24));
-        status.situacao = "LIBERADO — AGUARDANDO APRESENTAÇÃO";
+    } else if (hoje <= dataApresentacao) {
+        var diasParaApresentar = Math.ceil((dataApresentacao - hoje) / (1000 * 60 * 60 * 24));
+        status.situacao = "EM TRÂNSITO — AGUARDANDO APRESENTAÇÃO";
         status.cor = REM_COR_VERDE;
-        status.mensagem = "Servidor liberado. Prazo para apresentação: " + diasParaApresentar + " dia(s).";
+        status.mensagem = "Servidor em deslocamento. Prazo para apresentação: " + diasParaApresentar + " dia(s).";
         status.diasParaApresentar = diasParaApresentar;
-    } else if (hoje > dataApresentacaoFinal) {
-        var diasAtraso = Math.ceil((hoje - dataApresentacaoFinal) / (1000 * 60 * 60 * 24));
+    } else {
+        var diasAtraso = Math.ceil((hoje - dataApresentacao) / (1000 * 60 * 60 * 24));
         status.situacao = "PRAZO DE APRESENTAÇÃO EXCEDIDO";
         status.cor = REM_COR_VERMELHO;
         status.mensagem = "Prazo de apresentação vencido há " + diasAtraso + " dia(s).";
@@ -961,33 +943,37 @@ function calcRemocao(dataPublicacao, temAfastamento, iniAfast, fimAfast, dataLib
     if (temLiberacaoEfetiva) {
         status.cor = REM_COR_ROXO;
         status.situacao = "LIBERAÇÃO EFETIVADA";
-        status.mensagem = "Servidor liberado em " + fd(dataLiberacaoEfetiva) + 
-                         (diasAntecipacao > 0 ? " — " + diasAntecipacao + " dia(s) antes do prazo" : 
-                          diasAntecipacao < 0 ? " — " + Math.abs(diasAntecipacao) + " dia(s) após o prazo" : 
-                          " — exatamente no prazo");
+        status.mensagem = "SGP liberou em " + fd(dataLiberacaoEfetiva) +
+            (diasAntecipacao > 0 ? " — " + diasAntecipacao + " dia(s) antes do prazo" :
+             diasAntecipacao === 0 ? " — exatamente no prazo" : "");
     }
 
     return {
-        dataPublicacao: dataPublicacao,
-        dataLiberacao: dataLiberacaoFinal.toISOString().slice(0, 10),
-        dataApresentacao: dataApresentacaoFinal.toISOString().slice(0, 10),
-        dataLiberacaoOriginal: dataLiberacaoBase.toISOString().slice(0, 10),
-        dataApresentacaoOriginal: dataApresentacaoBase.toISOString().slice(0, 10),
-        diasCorridosLiberacao: diasCorridosLiberacao,
-        diasCorridosApresentacao: diasCorridosApresentacao,
-        diasUteisLiberacao: diasUteisLiberacao,
-        diasUteisApresentacao: diasUteisApresentacao,
-        temAfastamento: temAfastamento,
-        afastamentoAtivo: afastamentoAtivo,
+        dataPublicacao:          dataPublicacao,
+        iniContagem:             iniContagem.toISOString().slice(0, 10),
+        dataFimLiberacao:        dataFimLiberacao.toISOString().slice(0, 10), // dia 10
+        inicioTransito:          inicioTransito.toISOString().slice(0, 10),   // dia 11
+        dataApresentacao:        dataApresentacao.toISOString().slice(0, 10), // dia 30
+        dataPrazoTotal:          dataApresentacao.toISOString().slice(0, 10),
+        dataLiberacao:           dataLiberacaoExibida.toISOString().slice(0, 10),
+        dataLiberacaoOriginal:   dataFimLiberacao.toISOString().slice(0, 10),
+        dataApresentacaoOriginal:dataApresentacao.toISOString().slice(0, 10),
+        diasCorridosLiberacao:   diasCorridosLiberacao,
+        diasCorridosApresentacao:diasCorridosTransito,
+        diasCorridos30:          REM_PRAZO_TOTAL + diasPostergacao,
+        diasUteisLiberacao:      diasUteisLiberacao,
+        diasUteisApresentacao:   diasUteisTransito,
+        temAfastamento:          temAfastamento,
+        afastamentoAtivo:        afastamentoAtivo,
         afastamentoAntesPublicacao: afastamentoAntesPublicacao,
-        diasPostergacao: diasPostergacao,
-        detalheAfastamento: detalheAfastamento,
-        temLiberacaoEfetiva: temLiberacaoEfetiva,
-        dataLiberacaoEfetiva: temLiberacaoEfetiva ? dataLiberacaoEfetiva : null,
-        diasAntecipacao: temLiberacaoEfetiva ? diasAntecipacao : 0,
-        status: status,
-        inicioContagem: (afastamentoAntesPublicacao && dataLiberacaoAfastamento) ? dataLiberacaoAfastamento.toISOString().slice(0, 10) : iniContagem.toISOString().slice(0, 10),
-        referenciaInicio: referenciaInicio.toISOString().slice(0, 10),
+        diasPostergacao:         diasPostergacao,
+        detalheAfastamento:      detalheAfastamento,
+        temLiberacaoEfetiva:     temLiberacaoEfetiva,
+        dataLiberacaoEfetiva:    temLiberacaoEfetiva ? dataLiberacaoEfetiva : null,
+        diasAntecipacao:         temLiberacaoEfetiva ? diasAntecipacao : 0,
+        status:                  status,
+        inicioContagem:          (afastamentoAntesPublicacao && dataLiberacaoAfastamento) ? dataLiberacaoAfastamento.toISOString().slice(0, 10) : iniContagem.toISOString().slice(0, 10),
+        referenciaInicio:        referenciaInicio.toISOString().slice(0, 10),
     };
 }
 
@@ -1027,7 +1013,7 @@ function doCalcRemocao() {
         );
 
         if (prazoMax && libEf && libEf > prazoMax) {
-            showErr("A data de efetiva liberação deve ser dentro do prazo de " + REM_PRAZO_LIBERACAO + " dias, considerando o afastamento (até " + fd(prazoMax.toISOString().slice(0,10)) + ").");
+            showErr("A data de efetiva liberação deve ser dentro do prazo de " + REM_PRAZO_LIBERACAO + " dias (§ 1º Art. 28), considerando o afastamento (até " + fd(prazoMax.toISOString().slice(0,10)) + ").");
             return;
         }
     }
@@ -1064,17 +1050,15 @@ function render() {
     var res = v.res;
 
     var h = '<div class="ptitle">Cálculo Remoção SGP</div>';
-    h += '<div class="psubt">Prazos de liberação e apresentação — Art. 36, Lei 8.112/90</div>';
+    h += '<div class="psubt">Prazos de liberação e deslocamento — Art. 28</div>';
 
     // Base legal
     h += '<div class="norm"><div class="norm-t">Base Legal</div>';
     h += '<div class="norm-b">';
-    h += 'Art. 36, Lei nº 8.112/1990:<br>';
-    h += '• <strong>' + REM_PRAZO_LIBERACAO + ' dias corridos</strong> para liberação da unidade de origem.<br>';
-    h += '• <strong>' + REM_PRAZO_APRESENTACAO + ' dias corridos</strong> para apresentação na nova unidade, ';
-    h += 'contados da data da <strong>efetiva liberação</strong>.<br>';
-    h += '<span style="font-size:11px;color:var(--t3)">Se o servidor estiver em afastamento no momento da publicação, a contagem do prazo de liberação ';
-    h += '<strong>começa após o término do afastamento</strong>.</span>';
+    h += '<strong>Art. 28</strong> — O servidor removido deverá retomar o efetivo desempenho na nova unidade no prazo máximo de <strong>' + REM_PRAZO_TOTAL + ' dias corridos</strong>, contado da publicação da portaria de remoção, incluído nesse período o prazo de <strong>' + REM_PRAZO_DESLOCAMENTO + ' dias para deslocamento</strong>.<br>';
+    h += '• <strong>§ 1º</strong> — O SGP de origem tem <strong>' + REM_PRAZO_LIBERACAO + ' dias</strong> para expedir a guia de apresentação e dar ciência ao servidor.<br>';
+    h += '• <strong>§ 2º</strong> — Se o servidor estiver em fruição de licença ou afastamento legal, o prazo de ' + REM_PRAZO_TOTAL + ' dias é contado a partir do <strong>término da licença/afastamento</strong>.<br>';
+    h += '<span style="font-size:11px;color:var(--t3)">Lógica: publicação → SGP tem 10 dias para liberar → servidor tem 20 dias para se deslocar e apresentar na nova unidade.</span>';
     h += '</div></div>';
 
     // Identificação
@@ -1178,36 +1162,38 @@ function renderResultado(res, v) {
     // Parâmetros
     h += '<div class="ms"><div class="ms-l">Parâmetros</div>';
     h += '<div class="ms-t">Data da Publicação: <strong style="color:#BF8C14">' + fd(res.dataPublicacao) + '</strong></div>';
-    
+
     if (res.afastamentoAntesPublicacao && res.detalheAfastamento && res.detalheAfastamento.novoInicio) {
         h += '<div class="ms-t" style="color:var(--am)">⚠ Afastamento já em curso antes da publicação: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
-        h += '<div class="ms-t" style="color:var(--am)">Novo marco zero para liberação: <strong>' + res.detalheAfastamento.novoInicio + '</strong> (dia seguinte ao fim do afastamento)</div>';
+        h += '<div class="ms-t" style="color:var(--am)">Novo marco zero (§ 2º Art. 28): <strong>' + res.detalheAfastamento.novoInicio + '</strong> (dia seguinte ao fim do afastamento)</div>';
     } else if (res.temAfastamento && res.afastamentoAtivo) {
         h += '<div class="ms-t" style="color:var(--am)">⚠ Afastamento com sobreposição: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
         h += '<div class="ms-t" style="color:var(--am)">Postergação da liberação: <strong>+' + res.diasPostergacao + ' dia(s)</strong></div>';
     }
 
-    h += '<div class="ms-t">Prazo para liberação: <strong>' + REM_PRAZO_LIBERACAO + ' dias corridos</strong></div>';
-    h += '<div class="ms-t">Prazo para apresentação: <strong>' + REM_PRAZO_APRESENTACAO + ' dias corridos</strong> contados da liberação</div>';
-    
+    h += '<div class="ms-t">Prazo para o SGP expedir a guia: <strong>' + REM_PRAZO_LIBERACAO + ' dias corridos</strong> (§ 1º)</div>';
+    h += '<div class="ms-t">Prazo para deslocamento/apresentação: <strong>' + REM_PRAZO_DESLOCAMENTO + ' dias corridos</strong> contados da liberação</div>';
+    h += '<div class="ms-t">Prazo total para retomar as atribuições: <strong>' + REM_PRAZO_TOTAL + ' dias corridos</strong> da publicação (caput)</div>';
+
     if (res.temLiberacaoEfetiva) {
         h += '<div class="ms-t" style="color:#8B5CF6">🟣 Data de efetiva liberação: <strong>' + fd(res.dataLiberacaoEfetiva) + '</strong></div>';
-        h += '<div class="ms-t" style="color:#8B5CF6">' + 
-             (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' : 
-              res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+        h += '<div class="ms-t" style="color:#8B5CF6">' +
+             (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' :
+              res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' :
               '✅ Exatamente no prazo') + '</div>';
     }
 
     h += '</div>';
 
-    // Timeline
+    // Timeline — agora com 4 marcos: publicação, liberação SGP, apresentação, prazo total
     h += '<div class="ms"><div class="ms-l">Linha do Tempo</div>';
     h += '<div class="remocao-timeline">';
 
     var eventos = [
-        { data: res.inicioContagem, label: 'Marco Zero para Liberação', desc: 'Início da contagem do prazo de liberação', cor: REM_COR_AZUL },
-        { data: res.dataLiberacao, label: 'Liberação do Servidor', desc: res.temLiberacaoEfetiva ? 'Data efetiva da liberação' : 'Dia ' + REM_PRAZO_LIBERACAO + ' — prazo para liberação', cor: res.temLiberacaoEfetiva ? REM_COR_ROXO : (res.afastamentoAtivo ? REM_COR_AMARELO : REM_COR_VERDE) },
-        { data: res.dataApresentacao, label: 'Prazo Final para Apresentação', desc: 'Dia ' + REM_PRAZO_APRESENTACAO + ' contado da liberação — limite para apresentação', cor: REM_COR_VERMELHO }
+        { data: res.inicioContagem, label: 'Publicação / Marco Zero', desc: 'Dia 1 — início da contagem dos 30 dias', cor: REM_COR_AZUL },
+        { data: res.dataFimLiberacao, label: 'Fim da Janela do SGP', desc: 'Dia ' + REM_PRAZO_LIBERACAO + ' — prazo final para o SGP expedir a guia de apresentação (§ 1º)', cor: res.afastamentoAtivo ? REM_COR_AMARELO : REM_COR_VERDE },
+        { data: res.inicioTransito, label: 'Início do Trânsito', desc: 'Dia ' + (REM_PRAZO_LIBERACAO + 1) + ' — servidor em deslocamento para a nova unidade', cor: REM_COR_AZUL },
+        { data: res.dataApresentacao, label: 'Prazo Final para Apresentação', desc: 'Dia ' + (REM_PRAZO_TOTAL + res.diasPostergacao) + ' — limite para retomar as atribuições (caput Art. 28)', cor: REM_COR_VERMELHO }
     ];
 
     var hoje = remNormalizeDate(new Date());
@@ -1228,15 +1214,15 @@ function renderResultado(res, v) {
 
     h += '</div></div>';
 
-    // Resumo
+    // Resumo em cards
     h += '<div class="ms" style="border-color:rgba(191,140,20,.35)"><div class="ms-l">Resumo dos Prazos</div>';
     h += '<div class="remocao-resumo-grid">';
 
     var corLiberacao = res.temLiberacaoEfetiva ? REM_COR_ROXO : res.status.cor;
     h += '<div class="item">';
-    h += '<div class="label">Liberação</div>';
+    h += '<div class="label">Liberação (SGP)</div>';
     h += '<div class="valor ' + corLiberacao + '">' + fd(res.dataLiberacao) + '</div>';
-    h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">' + res.diasCorridosLiberacao + 'º dia da contagem</div>';
+    h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">' + res.diasCorridosLiberacao + 'º dia do marco zero</div>';
     if (res.diasUteisLiberacao > 0) {
         h += '<div style="font-size:10px;color:var(--t4)">~' + res.diasUteisLiberacao + ' dias úteis</div>';
     }
@@ -1253,6 +1239,13 @@ function renderResultado(res, v) {
     if (res.diasUteisApresentacao > 0) {
         h += '<div style="font-size:10px;color:var(--t4)">~' + res.diasUteisApresentacao + ' dias úteis</div>';
     }
+    h += '</div>';
+
+    // Card prazo total
+    h += '<div class="item" style="background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.25)">';
+    h += '<div class="label" style="color:#1D4ED8">Prazo Total (Art. 28)</div>';
+    h += '<div class="valor azul">' + fd(res.dataPrazoTotal) + '</div>';
+    h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">' + res.diasCorridos30 + 'º dia — limite absoluto</div>';
     h += '</div>';
 
     var bgColor = res.status.cor === REM_COR_VERDE ? 'var(--ok-bg)' :
@@ -1275,11 +1268,11 @@ function renderResultado(res, v) {
     // Detalhe do afastamento
     if (res.temAfastamento && res.afastamentoAntesPublicacao && res.detalheAfastamento) {
         h += '<div class="ms" style="border-color:rgba(234,179,8,.35);background:var(--am-bg)">';
-        h += '<div class="ms-l" style="color:var(--am)">⏳ Afastamento em Curso Antes da Publicação</div>';
+        h += '<div class="ms-l" style="color:var(--am)">⏳ Afastamento em Curso Antes da Publicação — § 2º Art. 28</div>';
         h += '<div class="ms-t">Período: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
-        h += '<div class="ms-t">Novo marco zero para liberação: <strong>' + res.detalheAfastamento.novoInicio + '</strong></div>';
-        h += '<div class="ms-t">Prazo de liberação (10 dias): <strong>' + fd(res.dataLiberacao) + '</strong></div>';
-        h += '<div class="ms-n">O afastamento já estava em curso, portanto a contagem do prazo de liberação começou após o seu término.</div>';
+        h += '<div class="ms-t">Novo marco zero para os 30 dias: <strong>' + res.detalheAfastamento.novoInicio + '</strong></div>';
+        h += '<div class="ms-t">Prazo de liberação do SGP (10 dias): <strong>' + fd(res.dataLiberacao) + '</strong></div>';
+        h += '<div class="ms-n">§ 2º Art. 28 — O prazo de 30 dias é contado a partir do término da licença ou afastamento legal.</div>';
         h += '</div>';
     } else if (res.temAfastamento && res.afastamentoAtivo) {
         h += '<div class="ms" style="border-color:rgba(234,179,8,.35);background:var(--am-bg)">';
@@ -1287,7 +1280,7 @@ function renderResultado(res, v) {
         h += '<div class="ms-t">Período: <strong>' + res.detalheAfastamento.periodo + '</strong></div>';
         h += '<div class="ms-t">Período de sobreposição: <strong>' + fd(res.detalheAfastamento.inicioSobreposicao) + ' a ' + fd(res.detalheAfastamento.fimSobreposicao) + '</strong></div>';
         h += '<div class="ms-t">Dias de postergação: <strong style="color:var(--am)">+' + res.diasPostergacao + ' dias</strong></div>';
-        h += '<div class="ms-n">Art. 36, § 2º, Lei 8.112/90 — O prazo de liberação fica prorrogado pelo período de afastamento que se sobreponha à janela do prazo</div>';
+        h += '<div class="ms-n">§ 2º Art. 28 — O prazo total fica prorrogado pelo período de afastamento sobreposto.</div>';
         h += '</div>';
     }
 
@@ -1296,14 +1289,14 @@ function renderResultado(res, v) {
         h += '<div class="ms" style="border-color:rgba(139,92,246,.35);background:rgba(139,92,246,.06)">';
         h += '<div class="ms-l" style="color:#7C3AED">🟣 Liberação Efetiva Informada</div>';
         h += '<div class="ms-t">Data da efetiva liberação: <strong>' + fd(res.dataLiberacaoEfetiva) + '</strong></div>';
-        h += '<div class="ms-t">' + (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' : 
-                                   res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+        h += '<div class="ms-t">' + (res.diasAntecipacao > 0 ? '✅ ' + res.diasAntecipacao + ' dia(s) antes do prazo' :
+                                   res.diasAntecipacao < 0 ? '⚠️ ' + Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' :
                                    '✅ Exatamente no prazo') + '</div>';
         h += '<div class="ms-f" style="background:var(--sf2);border-left-color:rgba(139,92,246,.3)">';
-        h += 'Nova data de apresentação calculada: <strong style="color:#7C3AED">' + fd(res.dataApresentacao) + '</strong> ';
-        h += '(' + REM_PRAZO_APRESENTACAO + ' dias contados da data de efetiva liberação — o dia da liberação conta como Dia 1)';
+        h += 'Nova data de apresentação: <strong style="color:#7C3AED">' + fd(res.dataApresentacao) + '</strong> ';
+        h += '(' + REM_PRAZO_DESLOCAMENTO + ' dias de deslocamento contados da liberação efetiva, limitado ao ' + REM_PRAZO_TOTAL + 'º dia)';
         h += '</div>';
-        h += '<div class="ms-n">Art. 36, Lei 8.112/90 — A contagem do prazo para apresentação inicia-se a partir da data da efetiva liberação</div>';
+        h += '<div class="ms-n">Art. 28 — O prazo de deslocamento inicia-se a partir da data da efetiva liberação pelo SGP de origem.</div>';
         h += '</div>';
     }
 
@@ -1316,21 +1309,22 @@ function renderResultado(res, v) {
     h += '<tbody>';
     h += '<tr><td><strong>Publicação</strong></td><td>' + fd(res.dataPublicacao) + '</td><td>Marco inicial</td><td>—</td></tr>';
     if (res.afastamentoAntesPublicacao) {
-        h += '<tr><td><strong>Fim do Afastamento</strong></td><td>' + fd(res.referenciaInicio) + '</td><td>Novo marco zero</td><td>—</td></tr>';
+        h += '<tr><td><strong>Fim do Afastamento</strong></td><td>' + fd(res.referenciaInicio) + '</td><td>Novo marco zero (§ 2º)</td><td>—</td></tr>';
     }
-    h += '<tr><td><strong>Liberação</strong></td><td>' + fd(res.dataLiberacao) + '</td><td>' + res.diasCorridosLiberacao + 'º dia da contagem</td><td>' + (res.diasUteisLiberacao > 0 ? res.diasUteisLiberacao + ' dias' : '—') + '</td></tr>';
+    h += '<tr><td><strong>Liberação (SGP)</strong></td><td>' + fd(res.dataLiberacao) + '</td><td>' + res.diasCorridosLiberacao + 'º dia do marco zero</td><td>' + (res.diasUteisLiberacao > 0 ? res.diasUteisLiberacao + ' dias' : '—') + '</td></tr>';
     h += '<tr><td><strong>Apresentação</strong></td><td>' + fd(res.dataApresentacao) + '</td><td>' + res.diasCorridosApresentacao + 'º dia da liberação</td><td>' + (res.diasUteisApresentacao > 0 ? res.diasUteisApresentacao + ' dias' : '—') + '</td></tr>';
+    h += '<tr style="background:rgba(59,130,246,.07)"><td><strong>Prazo Total (Art. 28)</strong></td><td>' + fd(res.dataPrazoTotal) + '</td><td>' + res.diasCorridos30 + 'º dia do marco zero</td><td>—</td></tr>';
     if (res.temLiberacaoEfetiva) {
-        h += '<tr style="background:rgba(139,92,246,.08)"><td colspan="4" style="font-size:11px;color:#7C3AED">🟣 Data de efetiva liberação: ' + fd(res.dataLiberacaoEfetiva) + ' — ' + 
-             (res.diasAntecipacao > 0 ? res.diasAntecipacao + ' dia(s) antes do prazo' : 
-              res.diasAntecipacao < 0 ? Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' : 
+        h += '<tr style="background:rgba(139,92,246,.08)"><td colspan="4" style="font-size:11px;color:#7C3AED">🟣 Liberação efetiva: ' + fd(res.dataLiberacaoEfetiva) + ' — ' +
+             (res.diasAntecipacao > 0 ? res.diasAntecipacao + ' dia(s) antes do prazo' :
+              res.diasAntecipacao < 0 ? Math.abs(res.diasAntecipacao) + ' dia(s) após o prazo' :
               'exatamente no prazo') + '</td></tr>';
     }
     if (res.temAfastamento && res.afastamentoAtivo) {
-        h += '<tr style="background:var(--am-bg)"><td colspan="4" style="font-size:11px;color:var(--am)">⚠ Afastamento em vigor — liberação postergada em ' + res.diasPostergacao + ' dia(s)</td></tr>';
+        h += '<tr style="background:var(--am-bg)"><td colspan="4" style="font-size:11px;color:var(--am)">⚠ Afastamento em vigor — prazos postergados em ' + res.diasPostergacao + ' dia(s)</td></tr>';
     }
     if (res.temAfastamento && res.afastamentoAntesPublicacao) {
-        h += '<tr style="background:var(--am-bg)"><td colspan="4" style="font-size:11px;color:var(--am)">⏳ Afastamento já em curso — contagem iniciada após o término</td></tr>';
+        h += '<tr style="background:var(--am-bg)"><td colspan="4" style="font-size:11px;color:var(--am)">⏳ Afastamento já em curso — contagem iniciada após o término (§ 2º Art. 28)</td></tr>';
     }
     h += '</tbody></table></div>';
 
@@ -1340,7 +1334,7 @@ function renderResultado(res, v) {
         h += '</div>';
     }
 
-    var corVBig = res.status.cor === REM_COR_VERMELHO ? 'v-deb' : 
+    var corVBig = res.status.cor === REM_COR_VERMELHO ? 'v-deb' :
                   res.status.cor === REM_COR_ROXO ? 'v-am' : 'v-cred';
     h += '<div class="v-big ' + corVBig + '" style="margin-top:12px">';
     h += REM_STATUS_ICONS[res.status.cor] + ' ' + res.status.situacao + ' — ' + res.status.mensagem;
